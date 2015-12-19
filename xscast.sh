@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# "config" (TODO, make this actually configurable)
-# dzen stuff
+# default config
 dh=20
 dpad=20
 dfont=monospace
 dalign=l
 dfg='#ffffff'
 dbg='#000000'
-# keybindings
-kfinish='C-S-Esc'
-kclear='C-Esc'
+kfinish='C-NumLock'
+kclear='NumLock'
 
 # check for missing dependencies
 for dep in byzanz-record xwininfo xinput dzen2
@@ -28,19 +26,67 @@ do
             cat <<EOS
 Usage: $0 [OPTION]... [output-file]
 
-  -h, --help          output this help message
-  -c, --config        (re)configure xinput
+  -h, --help              output this help message
+  -c, --config            (re)configure xinput
+  -s, --height            set the height of the keystroke display box
+  -p, --pad               set the space between the box and the window edge
+  -f, --font              set the font of the keystrokes
+  -a, --align             [l]eft, [c]enter, or [r]ight
+  -t, --color, --fg       set the color of the keystrokes
+  -b, --background, --bg  set the color of the keystroke box
 EOS
             exit
             ;;
         -c|--config)
+            if [ -f "$HOME/.xscastrc" ]
+            then
+                echo -n "WARNING: $HOME/.xscastrc already exists. Overwrite? [yn] "
+                while :
+                do
+                    read
+                    case "$REPLY" in
+                        [Yy]*)
+                            rm -rf "$HOME/.xscastrc"
+                            break
+                            ;;
+                        [Nn]*)
+                            echo 'No files changed; exiting'
+                            exit 1
+                            ;;
+                        *)
+                            echo Please respond with y or n
+                            ;;
+                    esac
+                done
+            fi
             xinput --list
             printf "%$(tput cols)s" | tr ' ' '='
             echo Find your keyboard in the list and type the number after id=
             read
-            echo "$REPLY" > "$HOME/.xscastrc"
+            cat <<EOS > "$HOME/.xscastrc"
+# the id that comes from \`xinput --list'
+xinput_id=$REPLY
+# dzen config
+dh=20
+dpad=20
+dfont=monospace
+dalign=l
+dfg='#ffffff'
+dbg='#000000'
+# keybindings (in the same format as xscast output)
+kfinish='C-NumLock'
+kclear='NumLock'
+# other examples: C-S-F1, A-n, C-R, F11
+EOS
+            echo "Written to $HOME/.xscastrc. Please edit that file for further config options."
             exit
             ;;
+        -s|--height) c_dh="$2"; shift ;;
+        -p|--pad) c_dpad="$2"; shift ;;
+        -f|--font) c_dfont="$2"; shift ;;
+        -a|--align) c_dalign="$2"; shift ;;
+        -t|--color|--fg) c_dfg="$2"; shift ;;
+        -b|--background|--bg) c_dbg="$2"; shift ;;
         -*)
             echo >&2 "Unknown option \`$1'"
             exit 1
@@ -62,6 +108,14 @@ done
 [ -f "$HOME/.xscastrc" ] || { echo >&2 "Missing config file; try \`$0 --config'" && exit 1; }
 [ -f "$HOME/.xscastlock" ] && { echo >&2 "Lockfile still exists ($HOME/.xscastlock)" && exit 1; }
 [ -n "$outfile" ] || { echo >&2 Missing output file && exit 1; }
+source "$HOME/.xscastrc"
+[ -n "$xinput_id" ] || { echo >&2 "Malformed config file; try \`$0 --config' or editing $HOME/.xscastrc" && exit 1; }
+dh="${c_dh:-$dh}"
+dpad="${c_dpad:-$dpad}"
+dfont="${c_dfont:-$dfont}"
+dalign="${c_dalign:-$dalign}"
+dfg="${c_dfg:-$dfg}"
+dbg="${c_dbg:-$dbg}"
 
 # use xwininfo to grab info about a certain window
 echo Click on the window that you want to xscast
@@ -108,7 +162,7 @@ function lookup {
 }
 
 # start parsing xinput data
-xinput --test "$(<$HOME/.xscastrc)" | while read line
+xinput --test "$xinput_id" | while read line
 do
     key="$(echo "$line" | awk '{print $3}' | xargs -I{} grep 'keycode *{} =' <(xmodmap -pke))"
     if [[ "$line" == 'key press'* ]]

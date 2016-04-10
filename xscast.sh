@@ -7,6 +7,7 @@ dfont=monospace
 dalign=l
 dfg='#ffffff'
 dbg='#000000'
+dbar=yes
 kfinish='C-NumLock'
 kclear='NumLock'
 
@@ -34,6 +35,7 @@ Usage: $0 [OPTION]... [output-file]
   -a, --align             [l]eft, [c]enter, or [r]ight
   -t, --color, --fg       set the color of the keystrokes
   -b, --background, --bg  set the color of the keystroke box
+  -n, --no-bar            do not display the bar containing keystrokes
 EOS
             exit
             ;;
@@ -73,6 +75,7 @@ dfont=monospace
 dalign=l
 dfg='#ffffff'
 dbg='#000000'
+dbar=yes
 # keybindings (in the same format as xscast output)
 kfinish='C-NumLock'
 kclear='NumLock'
@@ -87,6 +90,7 @@ EOS
         -a|--align) c_dalign="$2"; shift ;;
         -t|--color|--fg) c_dfg="$2"; shift ;;
         -b|--background|--bg) c_dbg="$2"; shift ;;
+        -n|--no-bar) c_dbar=no; : ;;
         -*)
             echo >&2 "Unknown option \`$1'"
             exit 1
@@ -116,6 +120,7 @@ dfont="${c_dfont:-$dfont}"
 dalign="${c_dalign:-$dalign}"
 dfg="${c_dfg:-$dfg}"
 dbg="${c_dbg:-$dbg}"
+dbar="${c_dbar:-$dbar}"
 
 # use xwininfo to grab info about a certain window
 echo Click on the window that you want to xscast
@@ -161,10 +166,17 @@ function lookup {
     echo "$lookup_result"
 }
 
+# this is a really really bad idea, but it works
+if [ "$dbar" != yes ]
+then
+    dzen2 () { cat >/dev/null; }
+fi
+
 # start parsing xinput data
 xinput --test "$xinput_id" | while read line
 do
-    key="$(echo "$line" | awk '{print $3}' | xargs -I{} grep 'keycode *{} =' <(xmodmap -pke))"
+    key="$(echo "$line" | awk '{print $3}' | xargs -I{} \
+        grep 'keycode *{} =' <(xmodmap -pke))"
     if [[ "$line" == 'key press'* ]]
     then
         case "$key" in
@@ -214,11 +226,13 @@ do
             *Alt_[LR]*) m_alt= ;;
         esac
     fi
-done | dzen2 -x $wx -y $((wy+wh-dh-dpad)) -w $ww -h $dh -fn "$dfont" -ta "$dalign" -fg "$dfg" -bg "$dbg" &
+done | dzen2 -x $wx -y $((wy+wh-dh-dpad)) -w $ww -h $dh -fn "$dfont" \
+    -ta "$dalign" -fg "$dfg" -bg "$dbg" &
 
 # error checks
 [ $? -eq 0 ] || { echo >&2 "xinput error; try \`$0 --config'" && exit 1; }
 
 # start recording
 byzanz-record -x $wx -y $wy -w $ww -h $wh --delay=0 \
-    -e 'bash -c "while [ -f "$HOME/.xscastlock" ]; do sleep 0.01; done"' "$outfile"
+    -e 'bash -c "while [ -f "$HOME/.xscastlock" ]; do sleep 0.01; done"' \
+    "$outfile"

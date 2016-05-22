@@ -1,10 +1,10 @@
 ## xscast
 
-Dependencies: `byzanz-record xwininfo xinput dzen2`
+Dependencies: `ffmpeg convert xwininfo xinput dzen2`
 
-To install all deps on Debian (some may already be installed):
+To install all deps on Arch (some may already be installed):
 
-    # apt-get install byzanz x11-utils xinput dzen2
+    # pacman -S ffmpeg imagemagick xorg-utils xorg-server-utils dzen2
 
 Usage: `./xscast.sh out.gif`
 

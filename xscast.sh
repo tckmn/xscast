@@ -8,11 +8,11 @@ dalign=l
 dfg='#ffffff'
 dbg='#000000'
 dbar=yes
-kfinish='C-NumLock'
-kclear='NumLock'
+kfinish='C-Ins'
+kclear='Ins'
 
 # check for missing dependencies
-for dep in byzanz-record xwininfo xinput dzen2
+for dep in ffmpeg convert xwininfo xinput dzen2
 do
     type $dep &>/dev/null || { echo >&2 Missing dependency: $dep && exit 1; }
 done
@@ -77,8 +77,8 @@ dfg='#ffffff'
 dbg='#000000'
 dbar=yes
 # keybindings (in the same format as xscast output)
-kfinish='C-NumLock'
-kclear='NumLock'
+kfinish='C-Ins'
+kclear='Ins'
 # other examples: C-S-F1, A-n, C-R, F11
 EOS
             echo "Written to $HOME/.xscastrc. Please edit that file for further config options."
@@ -110,7 +110,6 @@ done
 
 # few last checks before we start
 [ -f "$HOME/.xscastrc" ] || { echo >&2 "Missing config file; try \`$0 --config'" && exit 1; }
-[ -f "$HOME/.xscastlock" ] && { echo >&2 "Lockfile still exists ($HOME/.xscastlock)" && exit 1; }
 [ -n "$outfile" ] || { echo >&2 Missing output file && exit 1; }
 source "$HOME/.xscastrc"
 [ -n "$xinput_id" ] || { echo >&2 "Malformed config file; try \`$0 --config' or editing $HOME/.xscastrc" && exit 1; }
@@ -134,7 +133,6 @@ ww=$(echo "$wininfo" | grep 'Width:' | grep -o '[0-9]*')
 wh=$(echo "$wininfo" | grep 'Height:' | grep -o '[0-9]*')
 
 # some setup for xinput parsing
-touch "$HOME/.xscastlock"
 m_shift=
 m_ctrl=
 m_alt=
@@ -201,7 +199,7 @@ do
                 [ -n "$m_ctrl" ] && name="C-$name"
                 if [ "$name" = "$kfinish" ]
                 then
-                    rm "$HOME/.xscastlock"
+                    kill -INT $(<.xscastpid)
                     break
                 elif [ "$name" = "$kclear" ]
                 then
@@ -233,6 +231,7 @@ done | dzen2 -x $wx -y $((wy+wh-dh-dpad)) -w $ww -h $dh -fn "$dfont" \
 [ $? -eq 0 ] || { echo >&2 "xinput error; try \`$0 --config'" && exit 1; }
 
 # start recording
-byzanz-record -x $wx -y $wy -w $ww -h $wh --delay=0 \
-    -e 'bash -c "while [ -f "$HOME/.xscastlock" ]; do sleep 0.01; done"' \
-    "$outfile"
+( ffmpeg -video_size ${ww}x$wh -framerate 25 -f x11grab -i :0.0+$wx,$wy \
+    -f image2pipe -vcodec ppm - & echo $! >&3 ) 3>.xscastpid | \
+    convert -delay 4 -loop 0 - "$outfile"
+rm .xscastpid

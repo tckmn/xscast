@@ -8,4 +8,4 @@ To install all deps on Arch (some may already be installed):
 
 Usage: `./xscast.sh out.gif`
 
-![](http://i.stack.imgur.com/EEpZb.gif)
+![](http://i.stack.imgur.com/L0WAq.gif)

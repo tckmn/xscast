@@ -1,0 +1,59 @@
+.TH XSCAST 1 "2016-07-11"
+.SH NAME
+xscast \- screencasts of windows with list of keystrokes overlayed
+.SH SYNOPSIS
+.B xscast
+[\fIOPTION\fR]...
+\fIOUTPUT-FILE\fR
+.br
+.B xscast \fB\-h\fR|\fB\-\-help\fR
+.br
+.B xscast \fB\-c\fR|\fB\-\-config\fR
+.SH DESCRPTION
+.B xscast
+is a tool for creating mini-screencasts of a terminal or other window. It
+displays a bar on top of the terminal (with
+.BR dzen2 (1))
+that shows keys as you press them, and it outputs an animated GIF.
+.SH OPTIONS
+.TP
+.BR \-s ", " \-\-height
+Set the height of the keystroke display box.
+.TP
+.BR \-p ", " \-\-pad
+Set the amount of space between the box and the window edge.
+.TP
+.BR \-f ", " \-\-font
+Set the font in which the keystrokes are displayed.
+.TP
+.BR \-a ", " \-\-align
+Align the keystroke text [l]eft, [c]enter, or [r]ight.
+.TP
+.BR \-t ", " \-\-color ", " --fg
+Set the color of the text.
+.TP
+.BR \-b ", " \-\-background ", " --bg
+Set the color of the keystroke box.
+.TP
+.BR \-n ", " \-\-no-bar
+Do not display the bar containing keystrokes.
+.TP
+.BR \-d ", " \-\-delay
+Set a delay before starting to record.
+.SH FILES
+.TP
+.I ~/.xscastrc
+Configuration file. Run
+.B xscast -c
+or
+.B xscast --config
+to update this.
+.SH BUGS
+Probably.
+.SH AUTHOR
+KeyboardFire <andy@keyboardfire.com>
+.SH SEE ALSO
+.BR ffmpeg (1),
+.BR convert (1),
+.BR xinput (1),
+.BR dzen2 (1)

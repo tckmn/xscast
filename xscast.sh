@@ -8,6 +8,7 @@ dalign=l
 dfg='#ffffff'
 dbg='#000000'
 dbar=yes
+delay=0
 kfinish='C-Ins'
 kclear='Ins'
 
@@ -36,6 +37,7 @@ Usage: $0 [OPTION]... [output-file]
   -t, --color, --fg       set the color of the keystrokes
   -b, --background, --bg  set the color of the keystroke box
   -n, --no-bar            do not display the bar containing keystrokes
+  -d, --delay             set a delay before starting to record
 EOS
             exit
             ;;
@@ -67,7 +69,7 @@ EOS
             read
             cat <<EOS > "$HOME/.xscastrc"
 # the id that comes from \`xinput --list'
-xinput_id=$REPLY
+xinput_id='$REPLY'
 # dzen config
 dh=20
 dpad=20
@@ -76,6 +78,7 @@ dalign=l
 dfg='#ffffff'
 dbg='#000000'
 dbar=yes
+delay=0
 # keybindings (in the same format as xscast output)
 kfinish='C-Ins'
 kclear='Ins'
@@ -91,6 +94,7 @@ EOS
         -t|--color|--fg) c_dfg="$2"; shift ;;
         -b|--background|--bg) c_dbg="$2"; shift ;;
         -n|--no-bar) c_dbar=no; : ;;
+        -d|--delay) c_delay="$2"; shift ;;
         -*)
             echo >&2 "Unknown option \`$1'"
             exit 1
@@ -120,6 +124,7 @@ dalign="${c_dalign:-$dalign}"
 dfg="${c_dfg:-$dfg}"
 dbg="${c_dbg:-$dbg}"
 dbar="${c_dbar:-$dbar}"
+delay="${c_delay:-$delay}"
 
 # use xwininfo to grab info about a certain window
 echo Click on the window that you want to xscast
@@ -170,8 +175,17 @@ then
     dzen2 () { cat >/dev/null; }
 fi
 
+sleep "$delay"
+
 # start parsing xinput data
-xinput --test "$xinput_id" | while read line
+> .xscastpid
+{
+    for id in $xinput_id
+    do
+        xinput --test "$id" &
+        echo $! >> .xscastpid
+    done
+} | while read line
 do
     key="$(echo "$line" | awk '{print $3}' | xargs -I{} \
         grep 'keycode *{} =' <(xmodmap -pke))"
@@ -199,7 +213,10 @@ do
                 [ -n "$m_ctrl" ] && name="C-$name"
                 if [ "$name" = "$kfinish" ]
                 then
-                    kill -INT $(<.xscastpid)
+                    for pid in $(<.xscastpid)
+                    do
+                        kill $pid
+                    done
                     break
                 elif [ "$name" = "$kclear" ]
                 then
@@ -232,6 +249,6 @@ done | dzen2 -x $wx -y $((wy+wh-dh-dpad)) -w $ww -h $dh -fn "$dfont" \
 
 # start recording
 ( ffmpeg -video_size ${ww}x$wh -framerate 25 -f x11grab -i :0.0+$wx,$wy \
-    -f image2pipe -vcodec ppm - & echo $! >&3 ) 3>.xscastpid | \
+    -f image2pipe -vcodec ppm - & echo $! >&3 ) 3>>.xscastpid | \
     convert -delay 4 -loop 0 - "$outfile"
 rm .xscastpid

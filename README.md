@@ -4,11 +4,12 @@
 window. It displays a bar on top of the terminal (with dzen2) that shows keys
 as you press them, and it outputs an animated GIF.
 
-Dependencies: `ffmpeg convert xwininfo xinput dzen2`. To install all
-dependencies on Arch (some may already be installed):
+Dependencies: `ffmpeg convert xwininfo xinput dzen2`.
 
-    # pacman -S ffmpeg imagemagick xorg-utils xorg-server-utils dzen2
+[Available on the AUR](https://aur.archlinux.org/packages/xscast-git/) as
+`xscast-git`.
 
-Usage: `./xscast.sh out.gif`
+Usage: `./xscast.sh out.gif` (for more information, see `xscast -h` or
+`man xscast`)
 
 ![](http://i.stack.imgur.com/L0WAq.gif)

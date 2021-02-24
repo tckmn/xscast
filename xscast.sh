@@ -130,12 +130,14 @@ dbar="${c_dbar:-$dbar}"
 drecord="${c_drecord:-$drecord}"
 delay="${c_delay:-$delay}"
 
-if [[ "$drecord" == yes && -z "$outfile" ]]; then
+if [ "$drecord" == yes ] && [ -z "$outfile" ]
+then
   echo >&2 Missing output file
   exit 1
 fi
 
-if [[ "$drecord" == no && "$dbar" == no ]]; then
+if [ "$drecord" == no ] && [ "$dbar" == no ]
+then
   echo >&2 "The options --no-bar and --no-record are mutually exclusive"
   exit 1
 fi

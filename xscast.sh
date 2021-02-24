@@ -8,6 +8,7 @@ dalign=l
 dfg='#ffffff'
 dbg='#000000'
 dbar=yes
+drecord=yes
 delay=0
 kfinish='C-Ins'
 kclear='Ins'
@@ -38,6 +39,7 @@ Usage: $0 [OPTION]... [output-file]
   -b, --background, --bg  set the color of the keystroke box
   -n, --no-bar            do not display the bar containing keystrokes
   -d, --delay             set a delay before starting to record
+  -R, --no-record         don't record, only display the bar containing keystrokes
 EOS
             exit
             ;;
@@ -78,6 +80,7 @@ dalign=l
 dfg='#ffffff'
 dbg='#000000'
 dbar=yes
+drecord=yes
 delay=0
 # keybindings (in the same format as xscast output)
 kfinish='C-Ins'
@@ -94,6 +97,7 @@ EOS
         -t|--color|--fg) c_dfg="$2"; shift ;;
         -b|--background|--bg) c_dbg="$2"; shift ;;
         -n|--no-bar) c_dbar=no; : ;;
+        -R|--no-record) c_drecord=no; : ;;
         -d|--delay) c_delay="$2"; shift ;;
         -*)
             echo >&2 "Unknown option \`$1'"
@@ -114,7 +118,6 @@ done
 
 # few last checks before we start
 [ -f "$HOME/.xscastrc" ] || { echo >&2 "Missing config file; try \`$0 --config'" && exit 1; }
-[ -n "$outfile" ] || { echo >&2 Missing output file && exit 1; }
 source "$HOME/.xscastrc"
 [ -n "$xinput_id" ] || { echo >&2 "Malformed config file; try \`$0 --config' or editing $HOME/.xscastrc" && exit 1; }
 dh="${c_dh:-$dh}"
@@ -124,7 +127,18 @@ dalign="${c_dalign:-$dalign}"
 dfg="${c_dfg:-$dfg}"
 dbg="${c_dbg:-$dbg}"
 dbar="${c_dbar:-$dbar}"
+drecord="${c_drecord:-$drecord}"
 delay="${c_delay:-$delay}"
+
+if [[ "$drecord" == yes && -z "$outfile" ]]; then
+  echo >&2 Missing output file
+  exit 1
+fi
+
+if [[ "$drecord" == no && "$dbar" == no ]]; then
+  echo >&2 "The options --no-bar and --no-record are mutually exclusive"
+  exit 1
+fi
 
 # use xwininfo to grab info about a certain window
 echo Click on the window that you want to xscast
@@ -247,8 +261,11 @@ done | dzen2 -x $wx -y $((wy+wh-dh-dpad)) -w $ww -h $dh -fn "$dfont" \
 # error checks
 [ $? -eq 0 ] || { echo >&2 "xinput error; try \`$0 --config'" && exit 1; }
 
-# start recording
-( ffmpeg -video_size ${ww}x$wh -framerate 25 -f x11grab -i :0.0+$wx,$wy \
-    -f image2pipe -vcodec ppm - & echo $! >&3 ) 3>>.xscastpid | \
-    convert -delay 4 -loop 0 - "$outfile"
-rm .xscastpid
+if [ "$drecord" == yes ]
+then
+  # start recording
+  ( ffmpeg -video_size ${ww}x$wh -framerate 25 -f x11grab -i :0.0+$wx,$wy \
+      -f image2pipe -vcodec ppm - & echo $! >&3 ) 3>>.xscastpid | \
+      convert -delay 4 -loop 0 - "$outfile"
+  rm .xscastpid
+fi

@@ -267,5 +267,6 @@ then
   ( ffmpeg -video_size ${ww}x$wh -framerate 25 -f x11grab -i :0.0+$wx,$wy \
       -f image2pipe -vcodec ppm - & echo $! >&3 ) 3>>.xscastpid | \
       convert -delay 4 -loop 0 - "$outfile"
-  rm .xscastpid
 fi
+wait
+rm .xscastpid
